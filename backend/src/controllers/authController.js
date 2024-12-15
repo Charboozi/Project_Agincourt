@@ -1,13 +1,28 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createUser, findUserByUsername } = require('../models/userModel.js');
+const { createKingdom } = require('../models/kingdomModel');
+const { createCastle } = require('../models/castleModel');
 
 const registerUser = async (req, res) => {
+    
     const { username, password } = req.body;
     try {
+        console.log("bajs");
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await createUser(username, hashedPassword);
-        res.status(201).json({ message: 'User registered successfully', user: newUser });
+        
+        // Create a default kingdom and castle for the user
+        const defaultKingdomName = `${username}'s Kingdom`; // Example default name
+        const newKingdom = await createKingdom(newUser.id, defaultKingdomName);
+        const newCastle = await createCastle(newUser.id, `${username}'s Main Castle`);
+        
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: newUser,
+            kingdom: newKingdom,
+            castle: newCastle
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

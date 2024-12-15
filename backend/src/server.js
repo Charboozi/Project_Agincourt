@@ -10,12 +10,12 @@ app.listen(PORT, () => {
 const cron = require('node-cron');
 const pool = require('./config/db');
 
-cron.schedule('* * * * * *', async () => {
+cron.schedule('* * * * *', async () => {
     try {
         const buildings = await pool.query(`
-            SELECT b.kingdom_id, b.production, b.farm, k.material, k.food
+            SELECT b.castle_id, b.production, b.farm, c.material, c.food
             FROM buildings b
-            JOIN kingdoms k ON b.kingdom_id = k.id
+            JOIN castles c ON b.castle_id = c.id
         `);
 
         for (const row of buildings.rows) {
@@ -23,14 +23,14 @@ cron.schedule('* * * * * *', async () => {
             const foodIncrease = row.farm * 10;       //food per farm building
 
             await pool.query(
-                `UPDATE kingdoms
+                `UPDATE castles
                  SET material = material + $1, food = food + $2
                  WHERE id = $3`,
-                [materialIncrease, foodIncrease, row.kingdom_id]
+                [materialIncrease, foodIncrease, row.castle_id]
             );
 
             console.log(
-                `Generated ${materialIncrease} material and ${foodIncrease} food for kingdom ${row.kingdom_id}`
+                `Generated ${materialIncrease} material and ${foodIncrease} food for castle ${row.castle_id}`
             );
         }
     } catch (error) {
