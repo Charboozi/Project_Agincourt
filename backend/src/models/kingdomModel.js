@@ -12,7 +12,18 @@ const getKingdomByUserId = async (userId) => {
     return result.rows[0];
 };
 
+const updateKingdomResources = async (userId, goldChange) => {
+    return await pool.query(
+        `UPDATE kingdoms 
+         SET gold = gold + $1
+         WHERE user_id = $2 RETURNING *`,
+        [goldChange, userId]
+    );
+};
+
+
 module.exports = {
     createKingdom,
-    getKingdomByUserId
+    getKingdomByUserId,
+    updateKingdomResources
 };

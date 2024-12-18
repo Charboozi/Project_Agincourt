@@ -3,15 +3,10 @@ const kingdomModel = require('../models/kingdomModel');
 
 const createCastle = async (req, res) => {
     const userId = req.user.id;
-    const { name } = req.body;
+    const { name ,x ,y } = req.body;
 
     try {
-        const kingdom = await kingdomModel.getKingdomByUserId(userId);
-        if (!kingdom) {
-            return res.status(403).json({ error: 'You do not own this kingdom' });
-        }
-
-        const castle = await castleModel.createCastle(userId, name);
+        const castle = await castleModel.createCastle(userId, name, x, y);
 
         res.status(201).json({ message: 'Castle created successfully', castle });
     } catch (error) {
@@ -23,13 +18,6 @@ const getCastles = async (req, res) => {
     const userId = req.user.id; 
 
     try {
-        // Verify the kingdom belongs to the user
-        const kingdom = await kingdomModel.getKingdomByUserId(userId);
-        if (!kingdom) {
-            return res.status(403).json({ error: 'You do not own this kingdom' });
-        }
-
-        // Get all castles for the kingdom
         const castles = await castleModel.getAllCastlesByUserId(userId);
 
         res.status(200).json({ message: 'Castles retrieved successfully', castles });
@@ -41,7 +29,7 @@ const getCastles = async (req, res) => {
 //Used whenever resources needs to be updated for a castle (FOR TESTING)
 const updateCastleResources = async (req, res) => {
     const userId = req.user.id;
-    const { castleId, gold = 0, material = 0, food = 0 } = req.body;
+    const { castleId, material = 0, food = 0 } = req.body;
 
     try {
         const castle = await castleModel.getCastleByIdAndUser(castleId, userId);
@@ -49,7 +37,7 @@ const updateCastleResources = async (req, res) => {
             return res.status(403).json({ error: 'You do not own this castle' });
         }
 
-        const updatedCastle = await castleModel.updateCastleResources(castleId, gold, material, food);
+        const updatedCastle = await castleModel.updateCastleResources(castleId, material, food);
 
         res.json({ message: 'Resources updated successfully', castle: updatedCastle });
     } catch (error) {
@@ -74,23 +62,29 @@ const buyBuilding = async (req, res) => {
     const { gold } = buildingCosts[buildingType];
     const totalGoldCost = gold * count;
 
+  
     try {
+        const kingdom = await kingdomModel.getKingdomByUserId(userId);
+        if (!kingdom) {
+            return res.status(404).json({ error: 'Kingdom not found for this user' });
+        }
+
+        if (kingdom.gold < totalGoldCost) {
+            return res.status(400).json({ error: 'Not enough gold to buy this building' });
+        }
+
+        const updatedKingdom = await kingdomModel.updateKingdomResources(userId, -totalGoldCost, 0, 0);
+
         const castle = await castleModel.getCastleByIdAndUser(castleId, userId);
         if (!castle) {
             return res.status(404).json({ error: 'Castle not found for this user' });
         }
 
-        if (castle.gold < totalGoldCost) {
-            return res.status(400).json({ error: 'Not enough gold to buy this building' });
-        }
-
-        const updatedCastle = await castleModel.updateCastleResources(castleId, -totalGoldCost, 0, 0);
-
         const updatedBuildings = await castleModel.updateBuildingCount(castleId, buildingType, count);
 
         res.status(200).json({
             message: 'Building purchased successfully',
-            updatedCastle,
+            updatedKingdom,
             updatedBuildings,
         });
     } catch (error) {

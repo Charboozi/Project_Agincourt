@@ -5,17 +5,22 @@ const { createKingdom } = require('../models/kingdomModel');
 const { createCastle } = require('../models/castleModel');
 
 const registerUser = async (req, res) => {
+    const { username, password ,x ,y } = req.body;
+
+    if (!username || !password || x === undefined || y === undefined) {
+        return res.status(400).json({
+            error: 'Username, password, x, and y are required fields.'
+        });
+    }
     
-    const { username, password } = req.body;
     try {
-        console.log("bajs");
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await createUser(username, hashedPassword);
         
         // Create a default kingdom and castle for the user
-        const defaultKingdomName = `${username}'s Kingdom`; // Example default name
+        const defaultKingdomName = `${username}'s Kingdom`;
         const newKingdom = await createKingdom(newUser.id, defaultKingdomName);
-        const newCastle = await createCastle(newUser.id, `${username}'s Main Castle`);
+        const newCastle = await createCastle(newUser.id, `${username}'s Main Castle`, x, y);
         
         res.status(201).json({
             message: 'User registered successfully',

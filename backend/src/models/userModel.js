@@ -12,7 +12,14 @@ const findUserByUsername = async (username) => {
     return result.rows[0];
 };
 
+const getUserById = async (id) => {
+    const query = 'SELECT * FROM users WHERE id = $1';
+    const result = await pool.query(query, [id]);
+    return result.rows[0];
+};
+
 module.exports = {
     createUser,
     findUserByUsername,
+    getUserById
 };
