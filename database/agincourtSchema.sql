@@ -1,4 +1,5 @@
-
+DROP TABLE IF EXISTS army_companies;
+DROP TABLE IF EXISTS user_alliances;
 DROP TABLE IF EXISTS buildings;
 DROP TABLE IF EXISTS castles;
 DROP TABLE IF EXISTS kingdoms;
@@ -19,10 +20,18 @@ CREATE TABLE kingdoms (
     gold INTEGER DEFAULT 0,        
 );
 
-CREATE TABLE user_alliances (
+CREATE TABLE alliances (
+    id SERIAL PRIMARY KEY,
+    alliance_name VARCHAR(100) NOT NULL, 
+    leader_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- Link to users
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE alliance_members (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- Link to users
-    ally_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- Link to ally users
+    alliance_id INTEGER REFERENCES alliances(id) ON DELETE CASCADE, -- Link to alliances
+    rank INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -59,18 +68,10 @@ CREATE TABLE armies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE warparties (
+CREATE TABLE army_companies (
     id SERIAL PRIMARY KEY,
-    created_by INTEGER REFERENCES users(id) ON DELETE CASCADE, --Link to users
-    x INTEGER NOT NULL,                                       
-    y INTEGER NOT NULL,                                       
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP            
-);
-
-CREATE TABLE warparty_members (
-    id SERIAL PRIMARY KEY,
-    warparty_id INTEGER REFERENCES warparties(id) ON DELETE CASCADE, -- Link to the warparty
-    army_id INTEGER REFERENCES armies(id) ON DELETE CASCADE,         -- Link to the army in the warparty
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP                   
+    main_army_id INTEGER REFERENCES armies(id) ON DELETE CASCADE, -- link to main army
+    allied_army_id INTEGER REFERENCES armies(id) ON DELETE CASCADE, -- link to allied army
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP     
 );
 

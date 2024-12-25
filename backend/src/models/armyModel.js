@@ -48,7 +48,7 @@ const updateArmyTroops = async (armyId, cavalry, infantry, archers) => {
     return result.rows[0];
 };
 
-const MergeArmiesCheck = async (x, y, userId, armyId) => {
+const MergeUserArmiesCheck = async (x, y, userId, armyId) => {
     const result = await pool.query(
     `SELECT * FROM armies 
      WHERE x = $1 AND y = $2 AND user_id = $3 AND id != $4`,
@@ -57,6 +57,7 @@ const MergeArmiesCheck = async (x, y, userId, armyId) => {
 
     return result.rows[0];
 };
+
 
 const CheckLocationForArmy = async (x, y) => {
     const result = await pool.query(
@@ -67,6 +68,77 @@ const CheckLocationForArmy = async (x, y) => {
     return result.rows[0];
 };
 
+const addArmyCompany = async (mainArmyId, alliedArmyId) => {
+    const result = await pool.query(
+        `INSERT INTO army_companies (main_army_id, allied_army_id)
+         VALUES ($1, $2)
+         RETURNING *`,
+        [mainArmyId, alliedArmyId]
+    );
+    return result.rows[0];
+};
+
+const removeArmyCompany = async (alliedArmyId) => {
+    const result = await pool.query(
+        `DELETE FROM army_companies
+         WHERE allied_army_id = $1
+         RETURNING *`,
+        [alliedArmyId]
+    );
+    return result.rows[0];
+};
+
+const getAccompaniedArmies = async (mainArmyId) => {
+    const result = await pool.query(
+        `SELECT * FROM armies
+         JOIN army_companies ON armies.id = army_companies.allied_army_id
+         WHERE army_allies.main_army_id = $1`,
+        [mainArmyId]
+    );
+    return result.rows;
+};
+
+const moveAccompaniedArmies = async (mainArmyId, x, y) => {
+    const result = await pool.query(
+        `UPDATE armies
+         SET x = $1, y = $2
+         WHERE id IN (
+             SELECT allied_army_id
+             FROM army_companies
+             WHERE main_army_id = $3
+         )
+         RETURNING *`,
+        [x, y, mainArmyId]
+    );
+    return result.rows;
+};
+
+const checkForAccompaniedArmy = async (x, y, excludeArmyId) => {
+    const result = await pool.query(
+        `SELECT * FROM armies
+         WHERE x = $1 AND y = $2 AND id != $3 AND main_army_id IS NULL`,
+        [x, y, excludeArmyId]
+    );
+    return result.rows[0];
+};
+
+const allyArmyCheck = async (x, y, userId) => {
+    const result = await pool.query(
+        `SELECT armies.*, ally_armies.id AS ally_army_id
+         FROM armies
+         JOIN user_alliances
+           ON (user_alliances.user_id = $3)
+         LEFT JOIN armies AS ally_armies
+           ON (ally_armies.user_id = user_alliances.ally_user_id)
+         WHERE armies.x = $1
+           AND armies.y = $2`,
+        [x, y, userId]
+    );
+
+    return result.rows[0];
+};
+
+
 module.exports = {
     createArmy,
     getAllArmies,
@@ -74,6 +146,15 @@ module.exports = {
     moveArmy,
     deleteArmy,
     updateArmyTroops,
-    MergeArmiesCheck,
-    CheckLocationForArmy
+
+    MergeUserArmiesCheck,
+
+    CheckLocationForArmy,
+
+    allyArmyCheck,
+    addArmyCompany,
+    removeArmyCompany,
+    getAccompaniedArmies,
+    moveAccompaniedArmies,
+    checkForAccompaniedArmy               
 }

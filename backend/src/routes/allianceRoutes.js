@@ -1,16 +1,16 @@
 const express = require('express');
 const {  
-    createAlliance,
-    getAllAllies,
-    breakAlliance
+    joinAlliance,
+    getAllies,
+    leaveAlliance
 } = require('../controllers/allianceController');
 
 const authenticateToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/create', authenticateToken, createAlliance);
-router.get('/', authenticateToken, getAllAllies);
-router.delete('/', authenticateToken, breakAlliance)
+router.post('/join', authenticateToken, joinAlliance);
+router.get('/', authenticateToken, getAllies);
+router.delete('/', authenticateToken, leaveAlliance)
 
 module.exports = router;

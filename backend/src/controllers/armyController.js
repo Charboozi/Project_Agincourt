@@ -44,8 +44,7 @@ const moveArmy = async (req, res) => {
         }
 
         // Check if another army exists at the target coordinates for the same user
-        const existingArmy = await armyModel.MergeArmiesCheck(x, y, userId, armyId);
-
+        const existingArmy = await armyModel.MergeUserArmiesCheck(x, y, userId, armyId);
         if (existingArmy) {
             // Merge the armies
             const updatedArmy = await armyModel.updateArmyTroops(
@@ -63,11 +62,29 @@ const moveArmy = async (req, res) => {
                 army: updatedArmy,
             });
         }
+        
+        //check user if army is in a castle.
+        const armyInCastle = await castleModel.getCastleByLocation(x, y);
+        const targetCastleId = armyInCastle ? targetCastle.id : null;
+        
+        const allyArmy = await armyModel.allyArmyCheck(x, y, userId);
+        if (allyArmy) {
+            await armyModel.addArmyCompany(allyArmy.ally_army_id, armyId);
+            console.log("Accompanied army")
+        }else{
+            const removeCompany = await armyModel.removeArmyCompany(armyId);
 
-        const targetCastle = await castleModel.getCastleByLocation(x, y);
-        const targetCastleId = targetCastle ? targetCastle.id : null;
+            //Move Accompanied armies if user is leader
+            if(!removeCompany){
+                const accompaniedArmies = await armyModel.getAccompaniedArmies(armyId);
+                for (let i = 0; i < accompaniedArmies.length; i++) {
+                    const accompaniedArmy = accompaniedArmies[i];
+                    await armyModel.moveArmy(accompaniedArmy.allied_army_id, x, y, targetCastleId);
+                }
+            }
+        }
 
-        // If no army exists at the target position, simply move the army
+        //Move your army
         const movedArmy = await armyModel.moveArmy(armyId, x, y, targetCastleId);
 
         res.json({
@@ -97,7 +114,7 @@ const splitArmy = async (req, res) => {
         const updatedArmy = await armyModel.updateArmyTroops(armyId, -cavalry, -infantry, -archers);
 
         // Find an available adjacent location
-        const directions = [
+        const adjecentLocation = [
             { dx: 1, dy: 0 }, 
             { dx: -1, dy: 0 }, 
             { dx: 0, dy: 1 },  
@@ -105,7 +122,7 @@ const splitArmy = async (req, res) => {
         ];
 
         let newX, newY;
-        for (const { dx, dy } of directions) {
+        for (const { dx, dy } of adjecentLocation) {
             const testX = army.x + dx;
             const testY = army.y + dy;
 

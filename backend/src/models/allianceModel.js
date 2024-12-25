@@ -1,46 +1,77 @@
 const pool = require('../config/db');
 
-const createAlliance = async (userId, allyUserId) => {
+const createAlliance = async (leaderId, allianceName) => {
     const result = await pool.query(
-        `INSERT INTO user_alliances (user_id, ally_user_id)
+        `INSERT INTO alliances (leader_id, alliance_name)
         VALUES ($1, $2) RETURNING *`,
-        [userId, allyUserId]
+        [leaderId, allianceName]
     );
     return result.rows[0];
 };
 
-const getAllyById = async (userId, allyUserId) => {
+const joinAlliance = async (userId, allianceId, rank) => {
     const result = await pool.query(
-        `SELECT * FROM user_alliances 
-        WHERE user_id = $1 AND ally_user_id = $2`,
-        [userId, allyUserId]
+        `INSERT INTO alliance_members (user_id, alliance_id, rank)
+        VALUES ($1, $2, $3) RETURNING *`,
+        [userId, allianceId, rank]
     );
     return result.rows[0];
 };
 
-const getAllAlliesById = async (userId) => {
+const getUserAlliance = async (userId) => {
     const result = await pool.query(
-        `SELECT ua.*, u.username AS ally_user_name
-             FROM user_alliances ua
-             JOIN users u ON ua.ally_user_id = u.id
-             WHERE ua.user_id = $1`,
+        `SELECT * FROM alliances 
+        JOIN alliance_members ON alliances.id = alliance_members.alliance_id
+        WHERE alliance_members.user_id = $1`,
         [userId]
+    );
+    return result.rows[0];
+};
+
+const getAllianceMembers = async (allianceId) => {
+    const result = await pool.query(
+        `SELECT * FROM alliance_members
+        WHERE alliance_id = $1`,
+        [allianceId]
     );
     return result.rows;
 };
 
-const breakAlliance = async (userId, allyUserId) => {
+const getAllianceMember = async (userId) => {
     const result = await pool.query(
-        `DELETE FROM user_alliances
-         WHERE user_id = $1 AND ally_user_id = $2`,
-        [userId, allyUserId]
+        `SELECT * FROM alliance_members
+        WHERE user_id = $1`,
+        [userId]
     );
     return result.rows[0];
-}
+};
+
+const leaveAlliance = async (userId) => {
+
+    const result = await pool.query(
+        `DELETE FROM alliance_members
+         WHERE user_id = $1 RETURNING *`,
+        [userId]
+    );
+
+    return result.rows[0];
+};
+
+const deleteAlliance = async (leaderId) => {
+    const result = await pool.query(
+        `DELETE FROM alliances
+        WHERE leader_id = $1 RETURNING *`,
+        [leaderId]
+    );
+    return result.rows[0];
+};
 
 module.exports = {
     createAlliance,
-    getAllyById,
-    getAllAlliesById,
-    breakAlliance
+    joinAlliance,
+    getUserAlliance,
+    getAllianceMembers,
+    getAllianceMember,
+    leaveAlliance,
+    deleteAlliance
 }
