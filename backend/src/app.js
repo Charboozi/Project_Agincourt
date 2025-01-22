@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const kingdomRoutes = require('./routes/kingdomRoutes');
@@ -10,6 +11,11 @@ const allianceRoutes = require('./routes/allianceRoutes');
 const app = express();
 
 app.use(express.json()); 
+app.use(cors({
+     origin: 'http://localhost:5173', // Allow requests only from this frontend
+     methods: 'GET,POST,PUT,DELETE',  // Specify allowed HTTP methods
+     credentials: true,               // Allow cookies and other credentials
+}));
 
 // Mount routes
 app.use('/auth', authRoutes);

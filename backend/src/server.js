@@ -10,7 +10,7 @@ app.listen(PORT, () => {
 const cron = require('node-cron');
 const pool = require('./config/db');
 
-cron.schedule('* * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
     try {
         const buildings = await pool.query(`
             SELECT b.castle_id, b.production, b.farm, c.material, c.food
